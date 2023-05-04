@@ -11,11 +11,11 @@ import torchvision.models as models
 from resnet3d import *
 device_ = "cuda:0" # Add your device here
 
-class REM(nn.Module):
+class MedMM(nn.Module):
     def __init__(self,
                  image_model_name = 'resnet18',
                  report_model_name = 'chinese-roberta-wwm-ext', # 'bert-base-chinese', 'chinese-roberta-wwm-ext'
-                 img_aggregation_type = 'REM', # 'MID', 'AVG', 'GA', '3D', 'KDRA', 'RSA', 'REM'
+                 img_aggregation_type = 'MedMM', # 'MID', 'AVG', 'GA', '3D', 'KDRA', 'CTSA', 'MedMM'
                  input_W = 256, # width of slice
                  input_H = 256, # height of slice
                  input_D = 9, # slice number
@@ -31,7 +31,7 @@ class REM(nn.Module):
                  concate_type = 'direct' # 'direct', 'proj'
                  ):
 
-        super(REM, self).__init__()
+        super(MedMM, self).__init__()
 
         # init image encoder
         self.Img_model = ImageEncoder(image_model = image_model_name,
@@ -133,8 +133,8 @@ class ImageEncoder(nn.Module):
         )
         self.gated_img_w = nn.Linear(mm_dim, 1)
 
-        # REM
-        # RSA_COSINE
+        # MedMM
+        # CTSA_COSINE
         self.Proj_REP_cs = nn.Linear(768, self.mm_dim, bias=self.bias)
         self.Proj_SLICE_cs = nn.Linear(self.fc_input, self.mm_dim, bias=self.bias)
 
@@ -230,7 +230,7 @@ class ImageEncoder(nn.Module):
 
         return Output, region_atts
 
-    def RSA_cs(self,xpool,xdt):
+    def CTSA_cs(self,xpool,xdt):
         # xdt (batchssize, 768)
         # xpool (batchssize,slice,512)
         xdmm = self.Proj_REP_cs(xdt) # (batchsize, mmdim)
@@ -289,18 +289,18 @@ class ImageEncoder(nn.Module):
             v = torch.mean(h_squeeze,dim=1) # avg on slice
         elif self.aggregation == 'GA':
             v, slice_scores = self.gated_attention(h_squeeze)
-        elif self.aggregation == 'RSA':
-            v, slice_scores = self.RSA_cs(h_squeeze, xr_slice)
+        elif self.aggregation == 'CTSA':
+            v, slice_scores = self.CTSA_cs(h_squeeze, xr_slice)
         elif self.aggregation == 'KDRA':
             batchsize = hi.shape[0]
             slicenum = hi.shape[1]
             v_slices, region_atts = self.KDRA_mhsa(batchsize, slicenum, hi, xr_region)
             v = torch.mean(v_slices,dim=1) # avg on slice
-        elif self.aggregation == 'REM':
+        elif self.aggregation == 'MedMM':
             batchsize = hi.shape[0]
             slicenum = hi.shape[1]
             # rsa
-            residual, slice_scores = self.RSA_cs(h_squeeze, xr_slice)
+            residual, slice_scores = self.CTSA_cs(h_squeeze, xr_slice)
             # kdra
             v_slices, region_atts = self.KDRA_mhsa(batchsize, slicenum, hi, xr_region)
             # slice aggregation
