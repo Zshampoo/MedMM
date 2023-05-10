@@ -117,6 +117,7 @@ class ResNet(nn.Module):
                  sample_input_D,
                  sample_input_H,
                  sample_input_W,
+                 channels,
                  num_seg_classes,
                  shortcut_type='B',
                  no_cuda=False):
@@ -124,7 +125,7 @@ class ResNet(nn.Module):
         self.no_cuda = no_cuda
         super(ResNet, self).__init__()
         self.conv1 = nn.Conv3d(
-            1,
+            channels,
             64,
             kernel_size=7,
             stride=(2, 2, 2),
