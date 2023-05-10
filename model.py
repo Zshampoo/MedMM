@@ -115,7 +115,7 @@ class ImageEncoder(nn.Module):
 
         resnet_model, fc_input = self._get_res_basemodel(image_model, aggregation_type, H, W, D, channels)
         if aggregation_type == '3D':
-            self.resnet_model_1 = nn.Sequential(*list(resnet_model.module.children())[:-1]) #  drop FC
+            self.resnet_model_1 = nn.Sequential(*list(resnet_model.children())[:-1]) #  drop FC
         else:
             self.resnet_model_1 = nn.Sequential(*list(resnet_model.children())[:-1]) #  drop FC
             self.resnet_model_2 = nn.Sequential(*list(resnet_model.children())[:-2]) #  drop FC and avgpool
